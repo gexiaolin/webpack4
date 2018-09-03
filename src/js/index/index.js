@@ -1,3 +1,4 @@
+require('css/commons/base.scss');
 require('css/index/index.scss');
 require('js/commons/demo.js');
 

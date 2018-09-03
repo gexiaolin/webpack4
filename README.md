@@ -3,6 +3,7 @@
 + 搭建基础项目架构
 + 开发中（dev-server）
 + 模块（module）配置
++ 生产环境的资源打包
 
 ## 一、搭建基础项目架构
 
@@ -78,7 +79,7 @@ cnpm i webpack-serve -D
 cnpm i glob yargs koa-router -D
 ```
 
-> **警告！**如果需要用cli命令启用服务的话，必需使用**CommonJS**规范语法。以下实例因为语法原因只能使用node语法启动，因为我**懒得改了**。
+> **警告！**如果需要用cli命令启用服务的话，必需使用**CommonJS**规范语法。以下实例因为未使用CommonJS规范的原因只能使用node语法启动，因为我**懒得改了**。
 
 配置我们需要的项目，并在根路由搭建目录列表：
 
@@ -180,11 +181,9 @@ let config = {
 
 ```json
 {
-	...
 	"scripts": {
 		"dev": "node ./serve.config.js"
-	},
-	...
+	}
 }
 ```
 
@@ -362,3 +361,87 @@ pages.forEach(item => {
 ```
 
 > 到目前为止，我们已经完成了开发环境的所有配置，可以使用`npm run dev`来看看项目是否已经正常启动。完整配置可以参考[这里](https://github.com/hinapudao/webpack4/blob/master/webpack.config.js)。
+
+## 四、生产环境的资源打包
+
+万里长征最后一步，配置生产环境，压缩静态资源，用chunk hash代替编译hash。
+
+> chunk hash可以根据文件内容生成hash，在文件内容无更改时不会生成新hash。而编译hash会在每次项目编译的时候重新生成，所以不建议使用在生产环境。
+
+为了方便书写，免去变量区分，我们新建一个`webpack.production.config.js`来配置生产环境。在webpack4下，我们不再需要`UglifyJsPlugin`来压缩js代码，只需要配置[**模式(mode)**](https://webpack.docschina.org/concepts/mode/)为`production`即可。
+
+配置如下：
+
+```js
+// webpack.production.config.js
+...
+let config = {
+	...
+	mode: 'production',
+	...
+};
+...
+```
+
+> 由于静态资源的编译顺序为**js依赖编译** > **编译css** > **抽离css资源为单独文件** > **编译并压缩js**，所以以上配置并不会压缩css文件，所以我们需要单独处理一下生产环境的css资源。
+
+webpack4下我们尝试使用[optimize-css-assets-webpack-plugin](https://github.com/NMFR/optimize-css-assets-webpack-plugin)来压缩css文件。
+
+首先安装依赖：
+
+```
+cnpm i optimize-css-assets-webpack-plugin -D
+```
+
+配置如下：
+
+```js
+// webpack.production.config.js
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+...
+let config = {
+	...
+	optimization: {
+		minimizer: [
+			new OptimizeCSSAssetsPlugin({
+				cssProcessorOptions: {
+					// postcss-loader解析css过程中已经添加了autoprefixer兼容
+					// 此处需要设置为false
+					autoprefixer: false
+				}
+			})
+		]
+	},
+	...
+};
+...
+```
+
+最后，我们需要用chunk hash代替编译hash。
+
+配置如下：
+
+```js
+// webpack.production.config.js
+...
+let config = {
+	...
+	output: {
+		path: path.resolve(__dirname, './dist'),
+		filename: 'js/[name].[chunkhash:7].js',
+		publicPath: './'
+	},
+	...
+	plugins: [
+		new MiniCssExtractPlugin({
+			filename: 'css/[name].[contenthash:7].css'
+		}),
+		...
+	]
+};
+...
+```
+
+> 完整的生产环境配置可以参考[这里](https://github.com/hinapudao/webpack4/blob/master/webpack.production.config.js)。    
+
+##### 以上，感谢阅读。

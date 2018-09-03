@@ -36,7 +36,7 @@ let config = {
     entry: entries,
     output: {
         path: path.resolve(__dirname, './dist'),
-        filename: 'js/[name].[hash:7].js',
+        filename: 'js/[name].[chunkhash:7].js',
         publicPath: 'https://res.smzdm.com/mobile/wap_v2/dist/'
     },
     mode: 'production',
@@ -122,12 +122,8 @@ let config = {
                 commons: {
                     name: 'commons',
                     chunks: 'initial',
+                    minSize: 0,
                     minChunks: 2
-                },
-                default: {
-                    minChunks: 2,
-                    priority: -20,
-                    reuseExistingChunk: true
                 }
             }
         },
@@ -142,8 +138,7 @@ let config = {
     plugins: [
         new ProgressBarWebpackPlugin(),
         new MiniCssExtractPlugin({
-            filename: 'css/[name].[hash:7].css',
-            chunkFilename: 'css/commons.[hash:7].css'
+            filename: 'css/[name].[contenthash:7].css'
         }),
         new CopyWebpackPlugin([
             {

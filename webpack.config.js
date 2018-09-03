@@ -39,6 +39,7 @@ let config = {
         filename: 'js/[name].[hash:7].js'
     },
     mode: 'development',
+    devtool: 'source-map',
     resolve: {
         alias: {
             js: path.join(SRC_PATH, 'js'),
