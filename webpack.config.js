@@ -46,6 +46,11 @@ let config = {
             tpl: path.join(SRC_PATH, 'tpl')
         }
     },
+    stats: {
+        entrypoints: false,
+        children: false,
+        modules: false
+    },
     module: {
         rules: [
             {
@@ -138,12 +143,8 @@ let config = {
                 commons: {
                     name: 'commons',
                     chunks: 'initial',
-                    minChunks: 2
-                },
-                default: {
                     minChunks: 2,
-                    priority: -20,
-                    reuseExistingChunk: true
+                    minSize: 0
                 }
             }
         }

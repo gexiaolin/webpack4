@@ -9,6 +9,7 @@ const config = {
     open: true
 };
 
+// 新建路由，输出目录结构
 let directory = new Router();
 directory.get('/', async ctx => {
     let html = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><ul>`;
@@ -37,13 +38,8 @@ serve(config, {
 
         // 加载路由中间件
         app.use(router.routes());
-
-        app.listen(8080, () => {
-            console.log('serve finish at port http://localhost:8080/');
-        });
     }
 })
 .then((result) => {
-    // console.log(result);
     // to do ...
 });
