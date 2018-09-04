@@ -216,33 +216,35 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 let config = {
 	...
 	module: {
-		{
-			test: /\.(c|sa|sc)ss$/,
-			use: [
-			    MiniCssExtractPlugin.loader,
-			    'css-loader',
-			    {
-			        loader: 'postcss-loader',
-			        options: {
-			            plugins: () => [
-			                require('autoprefixer')({
-			                    'browsers': ['> 1%', 'last 10 versions']
-			                })
-			            ]
-			        }
-			    },
-			    'sass-loader'
-			]
-		},
-		...
-		plugins: [
-			// 指定抽离出的css文件的输出规则
-			new MiniCssExtractPlugin({
-				filename: 'css/[name].[hash:7].css'
-			})
+		rules: [
+			{
+				test: /\.(c|sa|sc)ss$/,
+				use: [
+				    MiniCssExtractPlugin.loader,
+				    'css-loader',
+				    {
+				        loader: 'postcss-loader',
+				        options: {
+				            plugins: () => [
+				                require('autoprefixer')({
+				                    'browsers': ['> 1%', 'last 10 versions']
+				                })
+				            ]
+				        }
+				    },
+				    'sass-loader'
+				]
+			},
+			...
 		]
 	},
 	...
+	plugins: [
+		// 指定抽离出的css文件的输出规则
+		new MiniCssExtractPlugin({
+			filename: 'css/[name].[hash:7].css'
+		})
+	]
 };
 ...
 ```
@@ -273,7 +275,7 @@ let config = {
 		...
 		{
 			test: /\.ejs$/i,
-			use: 'ejs-compiled-loader'
+			use: 'ejs-zdm-loader'
 		},
 	},
 	...
