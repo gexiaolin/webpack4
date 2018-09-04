@@ -19,20 +19,20 @@ npm rebuild node-sass
 创建一个多入口项目，按照我们的现有项目，目录如下：
 
 ```
-|- your-project
-	|- src
-		|- css
-		|- js
-			|- project1
-			|- project2
-				|- components
-				|- index.js
-		|- tpl
-			|- project1
-			|- project2
-				|- components
-				|- index.ejs
-	|- package.json
+└ your-project
+  ├ src
+    ├ css
+    ├ js
+      ├ project1
+      └ project2
+        ├ components
+        └ index.js
+    └ tpl
+      ├ project1
+      └ project2
+        ├ components
+        └ index.ejs
+  └ package.json
 ```
 
 安装`webpack`和`webpack-cli`（webpack4需要配合webpack-cli使用，社区也有相关的绕过cli的解决方案，但不是很推荐）：
@@ -41,7 +41,7 @@ npm rebuild node-sass
 cnpm i webpack webpack-cli -D
 ```
 
-新建默认配置入口`webpack.config.js`，虽然能看到webpack4再往0配置的方向发展，但是在大多数项目中的配置三板斧还是不能少的：
+新建默认配置入口`webpack.config.js`，虽然能看到webpack4在往0配置的方向发展，但是在大多数项目中的配置三板斧还是不能少的：
 
 ```js
 let config = {
@@ -81,7 +81,7 @@ cnpm i glob yargs koa-router -D
 
 > **警告！**如果需要用cli命令启用服务的话，必需使用**CommonJS**规范语法。以下实例因为未使用CommonJS规范的原因只能使用node语法启动，因为我**懒得改了**。
 
-配置我们需要的项目，并在根路由搭建目录列表：
+配置我们需要的配置项，然后为了便利考虑在根路由搭建目录列表：
 
 ```js
 // serve.config.js
