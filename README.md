@@ -24,14 +24,18 @@ npm rebuild node-sass
     ├ css
     ├ js
       ├ project1
+        ├ detail.js
+        └ index.js
       └ project2
-        ├ components
         └ index.js
     └ tpl
       ├ project1
-      └ project2
-        ├ components
+        ├ detail.ejs
         └ index.ejs
+      └ project2
+        └ index.ejs
+  ├ webpack.config.js
+  ├ webpack.production.config.js
   └ package.json
 ```
 
@@ -45,10 +49,21 @@ cnpm i webpack webpack-cli -D
 
 ```js
 let config = {
-	entry: {},
-	output: {},
-	module: {},
-	mode: 'development'
+    entry: {
+        // webpack4默认src/index.js为入口文件
+        // 本次针对多入口项目做配置，第二节会去做入口文件的获取
+    },
+    output: {
+        // 文件输出默认为dist/bundle.js
+        // 第二节会去重新覆盖默认的输出项
+    },
+    module: {
+        rules: [
+            // module.rules在大多数情况仍然需要配置
+            // 我们需要合适的loader去解析对应的文件格式（*.css, *.ejs, ...）
+        ]
+    },
+    mode: 'development'
 };
 
 module.exports = config;
@@ -62,7 +77,7 @@ module.exports = config;
 
 webpack4的开发环境搭建有两个推荐：`webpack-dev-server`（node + express）和`webpack-serve`（node + koa2）。
 
-如果要沿用我们比较熟悉的`webpack-dev-server`进行开发环境的搭建，需要安装对应的beta版本：
+如果要沿用我们比较熟悉的`webpack-dev-server`（[传送门](https://github.com/webpack/webpack-dev-server)）进行开发环境的搭建，需要安装对应的beta版本：
 
 ```
 cnpm i webpack-dev-server@next -D
@@ -87,20 +102,22 @@ cnpm i glob yargs koa-router -D
 // serve.config.js
 
 const path = require('path');
-const glob = require('glob');
+const glob = require('glob'); // 用来更便捷的读取文件目录
 const serve = require('webpack-serve');
-const argv = require('yargs').argv;
-const Router = require('koa-router');
+const Router = require('koa-router'); // 引入koa-router，配置根路由的展示内容
 const WebpackConfig = require('./webpack.config.js');
 
+// 更多配置项参考 https://github.com/webpack-contrib/webpack-serve
 const config = {
-    open: true
+    open: true // 构建完成后是否自动在浏览器打开
 };
 
 // 新建路由，输出目录结构
 let directory = new Router();
 directory.get('/', async ctx => {
+    // 拼接根路由的html DOM结构
     let html = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><ul>`;
+    // 获取webpack入口文件，遍历生成目录结构
     let entries = WebpackConfig.entry;
 
     for (let key in entries) {
@@ -111,6 +128,7 @@ directory.get('/', async ctx => {
 
     html += `</ul>`;
 
+    // 输出html结构
     ctx.body = html;
 });
 
@@ -126,10 +144,6 @@ serve(config, {
 
         // 加载路由中间件
         app.use(router.routes());
-
-        app.listen(8080, () => {
-            console.log('serve finish at port http://localhost:8080/');
-        });
     }
 })
 .then((result) => {
@@ -138,7 +152,7 @@ serve(config, {
 
 ```
 
-在目录页的搭建时用到了webpack配置中的entry项，接下来在`webpack.config.js`中获取入口文件，并指定输出：
+在目录页的搭建时用到了webpack配置中的`entry`项（入口文件），接下来我们需要在`webpack.config.js`中获取我们项目的所有入口文件，并指定输出规则（`output`）：
 
 ```js
 // webpack.config.js
@@ -154,14 +168,20 @@ let entries = (entryPath => {
     let files = {},
         filesPath;
 
-    filesPath = glob.sync(entryPath + '/**/*.js', {});
+    // 传入的entryPath为src/js文件夹路径，这里用glob来简单获取入口js
+    // 如果有不需要作为入口js获取的文件／文件夹，在options项添加ignore配置来进行筛除
+    filesPath = glob.sync(entryPath + '/**/*.js', {
+        // options ...	
+    });
 
     filesPath.forEach((entry, index) => {
+        // 获取并简化入口文件对象的键名
         let chunkName = path.relative(entryPath, entry).replace(/\.js$/i, '');
 
         files[chunkName] = entry;
     });
 
+    // 返回多入口文件对象
     return files;
 })(path.join(SRC_PATH, 'js'));
 
@@ -189,11 +209,12 @@ let config = {
 
 ## 三、模块（module）配置
 
-> webpack4依然不支持把`css`和`html`作为模块，相关的loader配置仍然是必需项，看社区的开发计划，webpack5也许会解决这个问题。
+> webpack4依然不支持把`css`和`html`作为模块，相关格式的loader配置仍然是必需项。    
+> 根据社区的开发计划，webpack5也许会解决这个问题（把`css`和`html`视作模块进行解析）。
 
 #### 1、处理scss文件
 
-在webpack4之前我们都是用`extract-text-webpack-plugin`来抽离css为独立文件并引入，它的beta版本也对webpack4做了支持，但是仅支持`4.2.0`以下版本。
+在webpack4之前我们都是用`extract-text-webpack-plugin`来抽离已经被`sass-loader`、`css-loader`解析完成的css为**独立的外部css文件**，它的beta版本也对webpack4做了支持，但是仅支持`4.2.0`以下版本，因此我们应尽量选择版本向上兼容度更好的其他依赖。
 
 **解决方案：**使用官方新推荐的`mini-css-extract-plugin`作替代。
 
@@ -214,37 +235,38 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 ...
 let config = {
-	...
-	module: {
-		rules: [
-			{
-				test: /\.(c|sa|sc)ss$/,
-				use: [
-				    MiniCssExtractPlugin.loader,
-				    'css-loader',
-				    {
-				        loader: 'postcss-loader',
-				        options: {
-				            plugins: () => [
-				                require('autoprefixer')({
-				                    'browsers': ['> 1%', 'last 10 versions']
-				                })
-				            ]
-				        }
-				    },
-				    'sass-loader'
-				]
-			},
-			...
-		]
-	},
-	...
-	plugins: [
-		// 指定抽离出的css文件的输出规则
-		new MiniCssExtractPlugin({
-			filename: 'css/[name].[hash:7].css'
-		})
-	]
+    ...
+    module: {
+        rules: [
+            {
+                // 
+                test: /\.(c|sa|sc)ss$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            plugins: () => [
+                                require('autoprefixer')({
+                                    'browsers': ['> 1%', 'last 10 versions']
+                                })
+                            ]
+                        }
+                    },
+                    'sass-loader'
+                ]
+            },
+            ...
+        ]
+    },
+    ...
+    plugins: [
+        // 指定抽离出的css文件的输出规则
+        new MiniCssExtractPlugin({
+            filename: 'css/[name].[hash:7].css'
+        })
+    ]
 };
 ...
 ```
@@ -362,7 +384,7 @@ pages.forEach(item => {
 ...
 ```
 
-> 到目前为止，我们已经完成了开发环境的所有配置，可以使用`npm run dev`来看看项目是否已经正常启动。完整配置可以参考[这里](https://github.com/hinapudao/webpack4/blob/master/webpack.config.js)。
+> 到目前为止，我们已经完成了开发环境的所有配置，可以使用`npm run dev`来看看项目是否已经正常启动。完整配置可以参考**[这里](https://github.com/hinapudao/webpack4/blob/master/webpack.config.js)**。
 
 ## 四、生产环境的资源打包
 
@@ -442,6 +464,17 @@ let config = {
 	]
 };
 ...
+```
+
+添加webpack打包命令：
+
+```
+{
+    "scripts": {
+        "dev": "node ./serve.config.js",
+        "build": "rm -rf dist && npx webpack --config webpack.production.config.js"
+    }
+}
 ```
 
 > 完整的生产环境配置可以参考[这里](https://github.com/hinapudao/webpack4/blob/master/webpack.production.config.js)。    
