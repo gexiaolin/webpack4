@@ -16,6 +16,9 @@
 npm rebuild node-sass
 ```
 
+----
+
+
 创建一个多入口项目，按照我们的现有项目，目录如下：
 
 ```
@@ -69,9 +72,9 @@ let config = {
 module.exports = config;
 ```
 
-`mode`为webpack4新增配置，默认值为`production`，根据字面意思可以猜到分别对应开发环境和生产环境，该参数可以在cli中追加，也可以在config中配置（如上）。该参数在webpck4中为必需参数。
+> `mode`为webpack4新增配置，默认值为`production`，根据字面意思可以猜到分别对应开发环境和生产环境，设置的模式会有对应的内部配置。该参数可以在cli中追加，也可以在config中配置（如上）。该参数在webpck4中为必需参数。
 
-具体可以参考[**模式(mode)**](https://webpack.docschina.org/concepts/mode/)。
+> 具体可以参考[**模式(mode)**](https://webpack.docschina.org/concepts/mode/)。
 
 ## 二、开发中（dev-server）
 
@@ -83,7 +86,7 @@ webpack4的开发环境搭建有两个推荐：`webpack-dev-server`（node + exp
 cnpm i webpack-dev-server@next -D
 ```
 
-而`webpack-serve`（[传送门](https://github.com/webpack-contrib/webpack-serve)）作为升级版本，功能更加强大（也许也有更多的坑？），使用`WebSockets`做HMR(Hot Module Replacement 模块热替换)。这次我们就来体验一下`webpack-serve`，安装依赖：
+而`webpack-serve`（[传送门](https://github.com/webpack-contrib/webpack-serve)）作为升级版本，功能更加强大（**也许也会有更多的坑，待踩**），使用`WebSockets`做HMR(Hot Module Replacement 模块热替换)。这次我们就来体验一下`webpack-serve`，安装依赖：
 
 ```
 cnpm i webpack-serve -D
@@ -102,7 +105,9 @@ cnpm i glob yargs koa-router -D
 // serve.config.js
 
 const path = require('path');
-const glob = require('glob'); // 用来更便捷的读取文件目录
+// glob用更方便的规则匹配需要的文件
+// 参考地址 https://github.com/isaacs/node-glob
+const glob = require('glob');
 const serve = require('webpack-serve');
 const Router = require('koa-router'); // 引入koa-router，配置根路由的展示内容
 const WebpackConfig = require('./webpack.config.js');
@@ -142,7 +147,7 @@ serve(config, {
         middleware.webpack();
         middleware.content();
 
-        // 加载路由中间件
+        // 加载路由中间件，路由**必需**作为最后一个中间件添加
         app.use(router.routes());
     }
 })
@@ -152,10 +157,15 @@ serve(config, {
 
 ```
 
+-----
+
+
 在目录页的搭建时用到了webpack配置中的`entry`项（入口文件），接下来我们需要在`webpack.config.js`中获取我们项目的所有入口文件，并指定输出规则（`output`）：
 
 ```js
 // webpack.config.js
+
+// path参考 http://nodejs.cn/api/path.html
 const path = require('path');
 const glob = require('glob');
 
@@ -168,7 +178,7 @@ let entries = (entryPath => {
     let files = {},
         filesPath;
 
-    // 传入的entryPath为src/js文件夹路径，这里用glob来简单获取入口js
+    // 传入的entryPath为src/js文件夹路径
     // 如果有不需要作为入口js获取的文件／文件夹，在options项添加ignore配置来进行筛除
     filesPath = glob.sync(entryPath + '/**/*.js', {
         // options ...	
@@ -210,13 +220,13 @@ let config = {
 ## 三、模块（module）配置
 
 > webpack4依然不支持把`css`和`html`作为模块，相关格式的loader配置仍然是必需项。    
-> 根据社区的开发计划，webpack5也许会解决这个问题（把`css`和`html`视作模块进行解析）。
+> 根据社区的开发计划，webpack5也许会解决这个问题（把`css`和`html`视作模块读取）。
 
-#### 1、处理scss文件
+#### 1、处理scss/css文件
 
-在webpack4之前我们都是用`extract-text-webpack-plugin`来抽离已经被`sass-loader`、`css-loader`解析完成的css为**独立的外部css文件**，它的beta版本也对webpack4做了支持，但是仅支持`4.2.0`以下版本，因此我们应尽量选择版本向上兼容度更好的其他依赖。
+在webpack4之前我们都是用`extract-text-webpack-plugin`([传送门](https://github.com/webpack-contrib/extract-text-webpack-plugin))来抽离已经被`sass-loader`、`css-loader`解析完成的css为**独立的外部css文件**，它的beta版本也对webpack4做了支持，但是仅支持`4.2.0`以下版本，因此我们应尽量选择版本向上兼容度更好的其他依赖。
 
-**解决方案：**使用官方新推荐的`mini-css-extract-plugin`作替代。
+**解决方案：**使用官方新推荐的`mini-css-extract-plugin`([传送门](https://github.com/webpack-contrib/mini-css-extract-plugin))作替代。
 
 **注意：**loader的解析顺序为从后往前，顺序混乱可能会引起一些报错。
 
@@ -239,7 +249,8 @@ let config = {
     module: {
         rules: [
             {
-                // 
+                // 如果不希望把已经解析完成的css文件单独抽离引入，而是希望以style标签对的形式插入页面
+                // 可以把MiniCssExtractPlugin.loader替换为style-loader
                 test: /\.(c|sa|sc)ss$/,
                 use: [
                     MiniCssExtractPlugin.loader,
@@ -263,6 +274,7 @@ let config = {
     ...
     plugins: [
         // 指定抽离出的css文件的输出规则
+        // 如果使用style-loader，不需要以下配置
         new MiniCssExtractPlugin({
             filename: 'css/[name].[hash:7].css'
         })
@@ -307,7 +319,7 @@ let config = {
 
 #### 3、js公共模块抽离
 
-在webpack4之前，对于公共依赖的抽离使用的是`CommonsChunkPlugin`，webpack4对于该插件已经做了**废弃处理**，相对的，提供了更便捷的[SplitChunksPlugin](https://webpack.docschina.org/plugins/split-chunks-plugin/)作为新的解决方案。相关api在官方文档处都可以查到，本次不做详细解读。
+在webpack4之前，对于公共依赖的抽离使用的是`CommonsChunkPlugin`，webpack4对于该插件已经做了**废弃处理**，相对的，提供了更便捷的[SplitChunksPlugin](https://webpack.docschina.org/plugins/split-chunks-plugin/)作为新的解决方案。相关api在官方文档可以查看。
 
 配置如下：
 
